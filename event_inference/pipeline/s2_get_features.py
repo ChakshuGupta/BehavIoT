@@ -244,7 +244,8 @@ def extract_features(dec_file, feature_file, device_name, state, event):
 
 
     d = compute_tbp_features(pd_obj, device_name, state, event)
-    feature_data = feature_data.append(pd.DataFrame(data=[d], columns=col_feat))
+    new_data = pd.DataFrame(data=[d], columns=col_feat)
+    feature_data = pd.concat([feature_data, new_data])
     return feature_data
 
 
