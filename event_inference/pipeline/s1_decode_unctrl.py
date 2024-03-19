@@ -10,6 +10,7 @@ import numpy as np
 from subprocess import Popen, PIPE
 import Constants as c
 import pickle
+import yaml
 
 """
 
@@ -451,10 +452,10 @@ def run(files, out_dir, ip_hosts, result_list, count_dic):
                 count_dic[dev_name]['blank'] += count_tmp['blank']
                 count_dic[dev_name]['local'] += count_tmp['local']
         if not os.path.isdir('./logs/decode_logs'):
-            os.system("mkdir -pv %s" % './logs/decode_logs')
+            os.makedirs("./logs/decode_logs")
         log_dir = os.path.join('logs', 'decode_logs', os.path.basename(os.path.dirname(out_dir)))
         if not os.path.isdir(log_dir):
-            os.system("mkdir -pv %s" % log_dir)
+            os.makedirs(log_dir)
         print('Log dir: ',log_dir)
         for dev_name, c in count_dic.items():
             print(dev_name, c)
@@ -464,7 +465,7 @@ def run(files, out_dir, ip_hosts, result_list, count_dic):
                 flog.write('\n')
     # print("Average burst num:", average_burst/len(files))
 
-def main():
+def main(config):
     global mac_dic
     [ print_usage(0) for arg in sys.argv if arg in ("-h", "--help") ]
 
@@ -520,7 +521,7 @@ def main():
 
     print("Input file located in: %s\nOutput files placed in: %s\n" % (in_txt, out_dir))
     if not os.path.exists(out_dir):
-        os.system("mkdir -pv %s" % out_dir)
+        os.makedirs(out_dir)
     
     # device_files = {}
     device_files = {}
@@ -547,7 +548,7 @@ def main():
     ip_hosts_all = {}
 
     if in_txt.endswith('uncontrolled_dataset.txt') or in_txt.endswith('uncontrolled_dataset02.txt'):
-        model_file = './ip_host/uncontrolled_21-22_3month.model'
+        model_file = os.path.join(config["ip-host"]["out-dir"], config["ip-host"]["uncontrolled"])
     else:
         exit(1)
     ip_hosts_all = pickle.load(open(model_file, 'rb'))
@@ -582,5 +583,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    with open("config.yml", 'r') as cfgfile:
+        config = yaml.load(cfgfile, Loader=yaml.Loader)
+        main(config)
 

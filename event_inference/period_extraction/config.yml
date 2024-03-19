@@ -1,0 +1,5 @@
+root-path: "../data/idle-2021-features/"
+
+freq-period-path: "./freq_period/2021_1s"
+
+fingerprint-path: "./freq_period/fingerprints"

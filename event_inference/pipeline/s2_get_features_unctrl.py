@@ -10,6 +10,7 @@ from scipy.stats import skew
 from statsmodels import robust
 import Constants as c
 import utils
+import yaml
 
 cols_feat = [ "meanBytes", "minBytes", "maxBytes", "medAbsDev",
              "skewLength", "kurtosisLength", "meanTBP", "varTBP", "medianTBP", "kurtosisTBP",
@@ -94,7 +95,7 @@ def main():
     dict_dec = dict()
     dircache = os.path.join(out_dir, 'caches')
     if not os.path.exists(dircache):
-        os.system('mkdir -pv %s' % dircache)
+        os.makedirs(dircache)
     #Parse input file names
     #in_dir/dev_dir/act_dir/dec_file
     for dev_dir in os.listdir(in_dir):
@@ -275,6 +276,8 @@ def compute_tbp_features(pd_obj, device_name, state, event, mac_dic):
     Return:
         a feature list of the flow
     """
+    global config
+
     start_time = pd_obj.ts.min()
     # end_time = pd_obj.ts.max()
     # group_len = end_time - start_time
@@ -320,7 +323,7 @@ def compute_tbp_features(pd_obj, device_name, state, event, mac_dic):
             if m in mac_dic.values(): # local 
                 local_destination_device = list(mac_dic.keys())[list(mac_dic.values()).index(m)]
                 external_destination_addr = ''
-            elif ipaddress.ip_address(j).is_private==True or j=="129.10.227.248" or j=="129.10.227.207":
+            elif ipaddress.ip_address(j).is_private==True or j in config["ip-addr"]["global"]:
                 local_destination_device = m
                 external_destination_addr = ''
             else:
@@ -331,22 +334,22 @@ def compute_tbp_features(pd_obj, device_name, state, event, mac_dic):
     for i, j, f_len in zip(pd_obj.ip_src, pd_obj.ip_dst, pd_obj.frame_len):
         network_total += 1
         
-        if ipaddress.ip_address(i).is_private==True and (ipaddress.ip_address(j).is_private==False) and j!= "129.10.227.248" and j!= "129.10.227.207": # source addr i = 192.168.10.*, j != 192.168.10.* and != 129.10.227.248
+        if ipaddress.ip_address(i).is_private==True and (ipaddress.ip_address(j).is_private==False) and j not in config["ip-addr"]["global"]: # source addr i = 192.168.10.*, j != 192.168.10.* and != 129.10.227.248
             network_out += 1
             network_external += 1
             meanBytes_out_external += f_len
             
-        elif ipaddress.ip_address(j).is_private==True and (ipaddress.ip_address(i).is_private==False) and i!= "129.10.227.248" and i!= "129.10.227.207": # destation addr j = 192.168.10.*, i != 192.168.10.* and != 129.10.227.248
+        elif ipaddress.ip_address(j).is_private==True and (ipaddress.ip_address(i).is_private==False) and i not in config["ip-addr"]["global"]: # destation addr j = 192.168.10.*, i != 192.168.10.* and != 129.10.227.248
             network_in += 1
             network_external += 1
             meanBytes_in_external += f_len
 
         # FIXME
-        elif i == my_device_addr and (ipaddress.ip_address(j).is_private==True or j=="129.10.227.248" or j=="129.10.227.207"): # local out
+        elif i == my_device_addr and (ipaddress.ip_address(j).is_private==True or j in config["ip-addr"]["global"]): # local out
             network_out_local += 1
             network_local += 1
             meanBytes_out_local+= f_len
-        elif (ipaddress.ip_address(i).is_private==True or i=="129.10.227.248" or i=="129.10.227.207") and j == my_device_addr: #router
+        elif (ipaddress.ip_address(i).is_private==True or i in config["ip-addr"]["global"]) and j == my_device_addr: #router
             network_in_local += 1
             network_local += 1
             meanBytes_in_local += f_len
@@ -397,5 +400,7 @@ def compute_tbp_features(pd_obj, device_name, state, event, mac_dic):
 
 
 if __name__ == '__main__':
+    with open("config.yml", 'r') as cfgfile:
+        config = yaml.load(cfgfile, Loader=yaml.Loader)
     main()
 

@@ -3,6 +3,8 @@ import numpy as np
 import os
 import collections
 import matplotlib
+import yaml
+
 from statsmodels import api as sm
 from scipy.fft import fft, ifft, fftfreq
 from sklearn.metrics.pairwise import cosine_similarity
@@ -12,17 +14,18 @@ matplotlib.rcParams['agg.path.chunksize'] = 500
 import matplotlib.pyplot as plt
 
 
+with open("config.yml", 'r') as cfgfile:
+    config = yaml.load(cfgfile, Loader=yaml.Loader)
 
 
 # input files
-root_feature = '../data/idle-2021-features/'
 device_names = []
 lparas = []
-for csv_file in os.listdir(root_feature):
+for csv_file in os.listdir(config["root-path"]):
         if csv_file.endswith('.csv'):
             device_name = csv_file.replace('csv', '')
             device_names.append(device_name)
-            train_data_file = os.path.join(root_feature, csv_file)
+            train_data_file = os.path.join(config["root-path"], csv_file)
 
 
             dname = csv_file[:-4]
@@ -35,7 +38,7 @@ for v in lparas_sorted:
     print(v[1])    
 
 # load files
-file_path = 'freq_period/2021_1s'   # output file
+file_path = config["freq-period-path"]   # output file
 for a, b in enumerate(lparas):
     dname = lparas[a][-1]
     if os.path.isfile('%s/%s.txt' % (file_path, dname)):

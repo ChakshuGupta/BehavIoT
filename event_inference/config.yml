@@ -1,0 +1,12 @@
+ip-host:
+  out-dir: "./ip_host"
+  activity: "activity_nov.model"
+  idle: "ip_host_idle_nov16.model"
+  routine: "routines.model"
+  uncontrolled: "uncontrolled_21-22.model"
+
+ip-addr:
+  local: "192.168.0.2"
+  global:
+    - "129.10.227.248"
+    - "129.10.227.207"

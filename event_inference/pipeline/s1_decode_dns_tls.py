@@ -3,6 +3,7 @@ import os
 import numpy as np
 import Constants as c
 import pickle
+import yaml
 
 def print_usage(is_error):
     PATH = sys.argv[0]
@@ -56,7 +57,7 @@ def hostname_extract(infiles, dev_name):
 
     return ip_host
 
-def main():
+def main(config):
     [ print_usage(0) for arg in sys.argv if arg in ("-h", "--help") ]
 
     print("Running %s..." % sys.argv[0])
@@ -114,15 +115,18 @@ def main():
 
     
     # output dir 
-    out_dir = './ip_host'
+    out_dir = config["ip-host"]["out-dir"]
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
     if in_txt.endswith('routine_dns.txt'):
-        model_file = '%s/routines.model' %  out_dir
+        model_file = os.path.join(out_dir, config["ip-host"]["routine"])
     elif in_txt.endswith('activity_dns.txt'):
-        model_file = '%s/activity_nov.model' %  out_dir
+        model_file = os.path.join(out_dir, config["ip-host"]["activity"])
     elif in_txt.endswith('idle_dns.txt'):
-        model_file = '%s/ip_host_idle_nov16.model' %  out_dir
+        model_file = os.path.join(out_dir, config["ip-host"]["idle"])
     elif in_txt.endswith('uncontrolled_dns.txt'):
-        model_file = '%s/uncontrolled_21-22.model' %  out_dir
+        model_file = os.path.join(out_dir, config["ip-host"]["uncontrolled"])
     else:
         print('Please manually specify output model file')
         exit(1)
@@ -132,5 +136,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    with open("config.yml", 'r') as cfgfile:
+        config = yaml.load(cfgfile, Loader=yaml.Loader)
+        main(config)
 
