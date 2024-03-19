@@ -86,17 +86,17 @@ def read_mac_address():
 
 def get_features():
 
-    # cols_feat = [ "meanBytes", "minBytes", "maxBytes", "medAbsDev",
-    #          "skewLength", "kurtosisLength", "meanTBP", "varTBP", "medianTBP", "kurtosisTBP",
-    #          "skewTBP", "network_total", "network_in", "network_out", "network_external", "network_local",
-    #         "network_in_local", "network_out_local","meanBytes_out_external",
-    #         "meanBytes_in_external", "meanBytes_out_local", "meanBytes_in_local", "device", "state", "event", "start_time","protocol","hosts"]
     cols_feat = [ "meanBytes", "minBytes", "maxBytes", "medAbsDev",
              "skewLength", "kurtosisLength", "meanTBP", "varTBP", "medianTBP", "kurtosisTBP",
              "skewTBP", "network_total", "network_in", "network_out", "network_external", "network_local",
-            "network_in_local", "network_out_local", "meanBytes_out_external",
-            "meanBytes_in_external", "meanBytes_out_local", "meanBytes_in_local", 
-            "device", "state", "event", "start_time", "remote_ip", "remote_port" ,"trans_protocol", "raw_protocol", "protocol", "hosts"]
+            "network_in_local", "network_out_local","meanBytes_out_external",
+            "meanBytes_in_external", "meanBytes_out_local", "meanBytes_in_local", "device", "state", "event", "start_time","protocol","hosts"]
+    # cols_feat = [ "meanBytes", "minBytes", "maxBytes", "medAbsDev",
+    #          "skewLength", "kurtosisLength", "meanTBP", "varTBP", "medianTBP", "kurtosisTBP",
+    #          "skewTBP", "network_total", "network_in", "network_out", "network_external", "network_local",
+    #         "network_in_local", "network_out_local", "meanBytes_out_external",
+    #         "meanBytes_in_external", "meanBytes_out_local", "meanBytes_in_local", 
+    #         "device", "state", "event", "start_time", "remote_ip", "remote_port" ,"trans_protocol", "raw_protocol", "protocol", "hosts"]
     return cols_feat
 
 

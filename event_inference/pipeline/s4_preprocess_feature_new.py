@@ -33,7 +33,7 @@ def print_usage(is_error):
 
 def main():
 
-    global  root_output, dir_tsne_plots , root_feature, root_model, root_test, root_test_out
+    global  root_output, dir_tsne_plots, root_feature, root_model, root_test, root_test_out
 
     # Parse Arguments
     parser = argparse.ArgumentParser(usage=c.PREPRO_USAGE, add_help=False)
@@ -130,7 +130,7 @@ def train_models():
 
 
 def eid_wrapper(a):
-    return eval_individual_device(a[0], a[1], a[2])
+    return eval_individual_device(a[0], a[1])#, a[2])
 
 
 def eval_individual_device(idle_data_file, dname):
@@ -146,9 +146,9 @@ def eval_individual_device(idle_data_file, dname):
 
     # train data file, std&pca files
     train_data_file = '%s/%s.csv' %(train_feature_dir, dname)
-    train_std_dir = '%s%s' % (root_model[:-1], '-std' )
+    train_std_dir = '%s/%s%s' % (root_model[:-1], 'train', '-std' )
     std_train_file = '%s/%s.csv' % (train_std_dir, dname)
-    train_pca_dir = '%s%s' % (root_model[:-1], '-pca' )
+    train_pca_dir = '%s/%s%s' % (root_model[:-1], 'train', '-pca' )
     pca_train_file = '%s/%s.csv' % (train_pca_dir, dname)
 
     # test data file, std&pca files
@@ -167,10 +167,12 @@ def eval_individual_device(idle_data_file, dname):
 
         
     if not os.path.exists(train_std_dir):
-        os.mkdir(train_std_dir)
+        os.makedirs(train_std_dir)
+    
+    print(train_std_dir)
 
     if not os.path.exists(test_std_dir):
-        os.mkdir(test_std_dir)
+        os.makedirs(test_std_dir)
 
     
     # idle dirctories
@@ -221,7 +223,7 @@ def eval_individual_device(idle_data_file, dname):
         else:
             test_data = pd.read_csv(test_file)
 
-    
+   
         X_feature = train_data.drop(['device', 'state', 'event' ,'start_time', "remote_ip", "remote_port" ,"trans_protocol", "raw_protocol", 'protocol', 'hosts'], axis=1).fillna(-1)
         train_length = len(X_feature)
         test_data_feature = test_data.drop(['device', 'state', 'event','start_time', "remote_ip", "remote_port" ,"trans_protocol", "raw_protocol", 'protocol', 'hosts'], axis=1).fillna(-1)
@@ -245,8 +247,8 @@ def eval_individual_device(idle_data_file, dname):
     test_idle_data = idle_data.loc[(idle_data['start_time'] >= split_time)] 
 
 
-    train_idle_feature = train_idle_data.drop(['device', 'state', 'event','start_time', 'protocol', 'hosts'], axis=1).fillna(-1)
-    test_idle_feature = test_idle_data.drop(['device', 'state', 'event','start_time', 'protocol', 'hosts'], axis=1).fillna(-1)
+    train_idle_feature = train_idle_data.drop(['device', 'state', 'event' ,'start_time', "remote_ip", "remote_port" ,"trans_protocol", "raw_protocol", 'protocol', 'hosts'], axis=1).fillna(-1)
+    test_idle_feature = test_idle_data.drop(['device', 'state', 'event' ,'start_time', "remote_ip", "remote_port" ,"trans_protocol", "raw_protocol", 'protocol', 'hosts'], axis=1).fillna(-1)
 
     # unctrl_data = pd.read_csv(unctrl_file)
     
@@ -300,7 +302,9 @@ def eval_individual_device(idle_data_file, dname):
     '''
     Save ss and pca
     '''
-    model_path = './model/SS_PCA'
+    model_path = os.path.join(root_feature[0:5],'model/SS_PCA')
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
     saved_dictionary = dict({'ss':ss}) # ,'pca':pca
     pickle.dump(saved_dictionary, open("%s/%s.pkl"%(model_path,dname),"wb"))
 
@@ -310,7 +314,7 @@ def eval_individual_device(idle_data_file, dname):
         # X_idle_pca = X_all_pca
     else:
         X_std = X_all_std[:train_length,:] 
-        X_idle_std = X_all_std[train_length:,:] 
+        X_idle_std = X_all_std[train_length:,:]
         # X_pca = X_all_pca[:train_length,:] 
         # X_idle_pca = X_all_pca[train_length:,:]  # .iloc
 
