@@ -2,7 +2,7 @@ import os
 import re
 import yaml
 
-with open("config.yml", 'r') as cfgfile:
+with open("../config.yml", 'r') as cfgfile:
     config = yaml.load(cfgfile, Loader=yaml.Loader)
 
 device_names = []
@@ -21,10 +21,10 @@ for file in os.listdir(dirc):  #  /freq_new/
             
             print(device_name)
 
-            f = open(dirc+file) # './freq_new/'+
+            f = open(os.path.join(dirc, file)) # './freq_new/'+
             # f2 = open(dirc2+file) 
 
-            out_file = open(out_dir+file,'w+')
+            out_file = open(os.path.join(out_dir, file),'w+')
             # non_file = open(non_dir+file,'w+')
             non_nums = 0
             is_nums = 0

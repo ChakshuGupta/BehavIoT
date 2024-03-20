@@ -1,3 +1,4 @@
+# For s1 scripts
 ip-host:
   out-dir: "./ip_host"
   activity: "activity_nov.model"
@@ -5,8 +6,40 @@ ip-host:
   routine: "routines.model"
   uncontrolled: "uncontrolled_21-22.model"
 
+# For s2 scripts
 ip-addr:
   local: "192.168.0.2"
   global:
     - "129.10.227.248"
     - "129.10.227.207"
+
+
+# For period extraction
+root-path: "../data/idle-2021-features/"
+freq-period-path: "./freq_period/2021_1s"
+fingerprint-path: "./freq_period/fingerprints"
+
+
+# For preprocessing features in s4 scripts
+ss-pca-model-path: "./model/SS_PCA"
+
+train-feature-dir: "./data/train-features"
+train-std-dir: "./data/train-std"
+train-pca-dir: "./data/train-pca"
+
+test-feature-dir: "./data/test-features"
+test-std-dir: "./data/test-std"
+test-pca-dir: "./data/test-pca"
+
+train-idle-std-dir: "./data/idle-2021-train-std"
+train-idle-pca-dir: "./data/idle-2021-train-pca"
+test-idle-std-dir: "./data/idle-2021-test-std"
+test-idle-pca-dir: "./data/idle-2021-test-pca"
+
+routines-feature-dir: "./data/trace-features"
+routines-std-dir: "./data/routines-std"
+routines-pca-dir: "./data/routines-pca"
+
+
+# For s5 scripts
+idle-filter-dir: './data/idle-2021-test-filtered-std'

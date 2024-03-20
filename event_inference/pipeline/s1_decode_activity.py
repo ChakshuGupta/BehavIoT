@@ -163,6 +163,7 @@ def extract_pcap(in_pcap, out_txt, dev_name, ip_host):
             continue
         # print(len(packet), packet)
         result.append(packet)
+    print(len(result))
     result = np.asarray(result)
     if len(result) == 0:
         print('len(result) == 0')

@@ -230,7 +230,7 @@ def load_features_per_exp(dec_file, feature_file, device_name, state, event):
 
 #Create CSV cache file
 def extract_features(dec_file, feature_file, device_name, state, event):
-    global col_feat
+    global cols_feat
     pd_obj_all = pd.read_csv(dec_file, sep="\t")
     pd_obj = pd_obj_all.loc[:, :]
     num_total = len(pd_obj_all)
@@ -245,7 +245,7 @@ def extract_features(dec_file, feature_file, device_name, state, event):
 
 
     d = compute_tbp_features(pd_obj, device_name, state, event)
-    new_data = pd.DataFrame(data=[d], columns=col_feat)
+    new_data = pd.DataFrame(data=[d], columns=cols_feat)
     feature_data = pd.concat([feature_data, new_data])
     return feature_data
 

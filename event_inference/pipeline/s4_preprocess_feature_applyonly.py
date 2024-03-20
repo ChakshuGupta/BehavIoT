@@ -10,14 +10,12 @@ from sklearn.preprocessing import StandardScaler
 from multiprocessing import Pool
 import Constants as c
 import utils
+import yaml
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 
-
-num_pools = 12
 cols_feat = utils.get_features()
-            
-
+num_pools = 12
 
 model_list = []
 root_output = ''
@@ -26,6 +24,8 @@ root_feature = ''
 root_model = ''
 root_test= ''
 root_test_out = ''
+
+
 #is_error is either 0 or 1
 def print_usage(is_error):
     print(c.PREPRO_USAGE, file=sys.stderr) if is_error else print(c.PREPRO_USAGE)
@@ -132,11 +132,11 @@ def train_models():
 
 
 def eid_wrapper(a):
-    return eval_individual_device(a[0], a[1], a[2])
+    return eval_individual_device(a[0], a[1])#, a[2])
 
 
 def eval_individual_device(data_file, dname):
-    global root_feature, root_model, root_test, root_test_out
+    global root_feature, root_model, root_test, root_test_out, config
 
 
     train_std_dir = '%s%s' % (root_model[:-1], '-std' )
@@ -147,7 +147,7 @@ def eval_individual_device(data_file, dname):
 
         
     if not os.path.exists(train_std_dir):
-        os.system('mkdir -pv %s' % train_std_dir)
+        os.makedirs(train_std_dir)
     # if not os.path.exists(train_pca_dir):
     #     os.mkdir(train_pca_dir)
    
@@ -163,7 +163,7 @@ def eval_individual_device(data_file, dname):
     
 
     X_feature = train_data.drop(['device', 'state', 'event' ,'start_time', 'protocol', 'hosts'], axis=1).fillna(-1)
-    train_length = len(X_feature)
+    # train_length = len(X_feature)
 
 
     X_feature = np.array(X_feature)
@@ -172,10 +172,8 @@ def eval_individual_device(data_file, dname):
     '''
     Load ss and pca
     '''
-    model_path = './model/SS_PCA'
     # saved_dictionary = dict({'ss':ss,'pca':pca})
-    model_file = "%s/%s.pkl"%(model_path,dname)
-
+    model_file = os.path.join(config["ss-pca-model-path"], dname+".pkl")
 
     try:
         models = pickle.load(open(model_file, 'rb'))
@@ -189,7 +187,7 @@ def eval_individual_device(data_file, dname):
         test_data_std = ss.fit_transform(X_feature)
         # test_data_pca = pca.fit_transform(test_data_std)
         saved_dictionary = dict({'ss':ss})
-        pickle.dump(saved_dictionary, open("%s/%s.pkl"%(model_path,dname),"wb"))
+        pickle.dump(saved_dictionary, open(model_file,"wb"))
 
 
     test_data_std = pd.DataFrame(test_data_std, columns=cols_feat[:-6])
@@ -206,7 +204,6 @@ def eval_individual_device(data_file, dname):
 
 
 if __name__ == '__main__':
+    with open("config.yml", 'r') as cfgfile:
+        config = yaml.load(cfgfile, Loader=yaml.Loader)
     main()
-    num_pools = 12
-
-# 

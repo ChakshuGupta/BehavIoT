@@ -39,7 +39,7 @@ python3 fingerprint_generation.py
 
 # 4. preprocessing
 ```
-python3 pipeline/s4_preprocess_feature_new.py -i data/idle-2021-features/ -o data/idle/
+python3 pipeline/s4_preprocess_feature_new.py -i data/idle-2021-features/ -o data/
 ```
 ## preprocessing transform-only
 ```
@@ -53,13 +53,13 @@ python3 pipeline/s5_periodic_filter.py -i data/idle-2021-train-std/ -o model/fil
 ```
 ## activity dataset 
 ```
-python3 pipeline/s5_filter_by_periodic.py -i train -o model/filter
-python3 pipeline/s5_filter_by_periodic.py -i test -o model/filter
+python3 pipeline/s5_filter_by_periodic.py -i train -o model/filter_apr20
+python3 pipeline/s5_filter_by_periodic.py -i test -o model/filter_apr20
 ```
 ## routine and uncontrolled dataset - timing + model filter
 ```
 python3 pipeline/s5_periodic_time_filter.py -i data/routines-std/ -o model/time_filter
-python3 pipeline/s5_filter_by_periodic_after_time.py -i routines -o model/filter
+python3 pipeline/s5_filter_by_periodic_after_time.py -i routines -o model/filter_apr20
 # python3 pipeline/s5_filter_by_periodic_after_time.py -i uncontrolled -o model/filter_may1
 # python3 pipeline/s5_filter_by_periodic_after_time.py -i uncontrolled02 -o model/filter_may1
 ```

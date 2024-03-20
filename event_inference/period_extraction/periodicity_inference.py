@@ -14,7 +14,7 @@ matplotlib.rcParams['agg.path.chunksize'] = 500
 import matplotlib.pyplot as plt
 
 
-with open("config.yml", 'r') as cfgfile:
+with open("../config.yml", 'r') as cfgfile:
     config = yaml.load(cfgfile, Loader=yaml.Loader)
 
 

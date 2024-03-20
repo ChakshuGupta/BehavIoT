@@ -9,14 +9,11 @@ import pandas as pd
 import scipy as sp
 from sklearn.cluster import DBSCAN
 import time
-
+import yaml
 import Constants as c
 
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
-
-
-num_pools = 1
 
 cols_feat = utils.get_features()
 
@@ -126,7 +123,7 @@ def train_models():
     for csv_file in os.listdir(root_feature):
         if csv_file.endswith('.csv'):
             print(csv_file)
-            train_data_file = '%s/%s' % (root_feature, csv_file)
+            train_data_file = os.path.join(root_feature, csv_file)
             dname = csv_file[:-4]
 
             lparas.append((train_data_file, dname, random_state))
@@ -149,16 +146,16 @@ def train_models():
     #             off.write('%s\n' % '\t'.join(map(str, tmp_res)))
     #             print('Agg saved to %s' % tmp_outfile)
     t1 = time.time()
-    print('Time to train all models for %s devices using %s threads: %.2f' % (len(lparas),num_pools, (t1 - t0)))
+    print('Time to train all models for %s devices: %.2f' % (len(lparas), (t1 - t0)))
 
 
 
 def eid_wrapper(a):
-    return eval_individual_device(a[0], a[1], a[2])
+    return eval_individual_device(a[0], a[1])#, a[2])
 
 
-def eval_individual_device(train_data_file, dname, random_state, specified_models=None):
-    global root_feature, root_model, root_output, dbscan_eps
+def eval_individual_device(train_data_file, dname):# random_state, specified_models=None):
+    global root_feature, root_model, root_output, dbscan_eps, config
     """
     Assumptions: the train_data_file contains only 1 device, all possible labels
     """
@@ -167,8 +164,8 @@ def eval_individual_device(train_data_file, dname, random_state, specified_model
     Prepare the directories and add only models that have not been trained yet 
     """
     model_alg = 'filter'
-    model_dir = '%s/%s' % (root_model, model_alg)
-    model_file = '%s/%s%s.model' % (model_dir, dname, model_alg)
+    model_dir = os.path.join(root_model, model_alg)
+    # model_file = os.path.join(model_dir, dname + model_alg + ".model")
 
     """
     Training file reading 
@@ -188,9 +185,10 @@ def eval_individual_device(train_data_file, dname, random_state, specified_model
     Get period from fingerprinting files
     """
     periodic_tuple = []
-    tmp_host_set = set()
+    # tmp_host_set = set()
     try:
-        with open('./period_detection/freq_period/2021_fingerprints/%s.txt' % dname, 'r') as file:
+        file_path = os.path.join("period_extraction", config["fingerprint-path"], dname +'.txt')
+        with open(file_path, 'r') as file:
             for line in file:
                 tmp = line.split()
 
@@ -205,7 +203,7 @@ def eval_individual_device(train_data_file, dname, random_state, specified_model
                     tmp_host = ''
 
                 periodic_tuple.append((tmp_host, tmp_proto, tmp_period))
-                tmp_host_set.add((tmp_host,tmp_proto))
+                # tmp_host_set.add((tmp_host,tmp_proto))
 
     except:
         print( 'unable to read fingerprint file')
@@ -246,7 +244,7 @@ def eval_individual_device(train_data_file, dname, random_state, specified_model
     """
     print('loading test data')
 
-    test_data = pd.read_csv("data/idle-2021-test-std/%s.csv" % dname)
+    test_data = pd.read_csv( os.path.join( config["test-idle-std-dir"], "%s.csv" % dname))
     test_feature = test_data.drop(['device', 'state', 'event', 'start_time', 'protocol', 'hosts'], axis=1).fillna(-1)
     test_data_numpy = np.array(test_data)
     test_feature = np.array(test_feature)
@@ -327,7 +325,7 @@ def eval_individual_device(train_data_file, dname, random_state, specified_model
         """
 
         if not os.path.exists(model_dir):
-            os.system('mkdir -pv %s' % model_dir)
+            os.makedirs(model_dir)
         model_file = os.path.join(model_dir, dname + tmp_host + tmp_proto +".model")
 
         """
@@ -449,7 +447,7 @@ def eval_individual_device(train_data_file, dname, random_state, specified_model
         Save the model / logs
         """
         log_dir = os.path.join(root_model, 'logs')
-        os.system('mkdir -pv %s' % log_dir)
+        os.makedirs(log_dir, exist_ok=True)
         with open(os.path.join(log_dir,'%s.txt' % dname),'a+') as f:
             f.write('%s %s: ' % (tmp_proto, tmp_host))
             f.write('\nFlows left: %d %d %2f\n\n' % (count_left, test_feature_part.shape[0], count_left/test_feature_part.shape[0] ))
@@ -472,17 +470,16 @@ def eval_individual_device(train_data_file, dname, random_state, specified_model
         f.write('\nActivity left: %2f %d %d \n\n' % (len(set(test_data_numpy[:,-4]))/num_of_event, len(set(test_data_numpy[:,-4])), num_of_event))
 
     test_feature = pd.DataFrame(test_data_numpy, columns=cols_feat) # use this only when processing std data 
-    idle_filter_dir = 'data/idle-2021-test-filtered-std'
+    idle_filter_dir = config["idle-filter-dir"]
     if not os.path.exists(idle_filter_dir):
         os.mkdir(idle_filter_dir)
-    filtered_train_processed= '%s/%s.csv' % (idle_filter_dir, dname)
+    filtered_train_processed= os.path.join(idle_filter_dir, dname + ".csv")
     test_feature.to_csv(filtered_train_processed, index=False)
     return 0
 
 
 
 if __name__ == '__main__':
+    with open("config.yml", 'r') as cfgfile:
+        config = yaml.load(cfgfile, Loader=yaml.Loader)
     main()
-    num_pools = 1
-
-# 

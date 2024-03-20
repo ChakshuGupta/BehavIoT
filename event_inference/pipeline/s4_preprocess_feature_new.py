@@ -10,21 +10,21 @@ from sklearn.preprocessing import StandardScaler
 import time
 from multiprocessing import Pool
 import Constants as c
+import yaml
+
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", UserWarning)
 
-num_pools = 12
 cols_feat = utils.get_features()
-            
-
+num_pools = 12
 
 model_list = []
 root_output = ''
 dir_tsne_plots = ''
 root_feature = ''
 root_model = ''
-root_test= ''
-root_test_out = ''
+
+
 #is_error is either 0 or 1
 def print_usage(is_error):
     print(c.PREPRO_USAGE, file=sys.stderr) if is_error else print(c.PREPRO_USAGE)
@@ -33,7 +33,7 @@ def print_usage(is_error):
 
 def main():
 
-    global  root_output, dir_tsne_plots, root_feature, root_model, root_test, root_test_out
+    global  root_output, dir_tsne_plots, root_feature, root_model
 
     # Parse Arguments
     parser = argparse.ArgumentParser(usage=c.PREPRO_USAGE, add_help=False)
@@ -134,31 +134,32 @@ def eid_wrapper(a):
 
 
 def eval_individual_device(idle_data_file, dname):
-    global root_feature, root_model, root_test, root_test_out
+    global config
 
     
     # dirctories 
-    train_feature_dir = '%s%s' % (root_feature[0:5], 'train-features') 
-    test_feature_dir = '%s%s' % (root_feature[0:5], 'test-features') 
-    test_std_dir = '%s%s%s' % (root_model[0:5], 'test' , '-std')
-    test_pca_dir = '%s%s%s' % (root_model[0:5], 'test' , '-pca')
+    train_feature_dir = config["train-feature-dir"]
+    train_std_dir = config['train-std-dir']
+    train_pca_dir = config['train-pca-dir']
+
+    test_feature_dir = config['test-feature-dir']
+    test_std_dir = config['test-std-dir']
+    test_pca_dir = config['test-pca-dir']
     # print('Test feature:',test_feature_dir)
 
     # train data file, std&pca files
-    train_data_file = '%s/%s.csv' %(train_feature_dir, dname)
-    train_std_dir = '%s/%s%s' % (root_model[:-1], 'train', '-std' )
-    std_train_file = '%s/%s.csv' % (train_std_dir, dname)
-    train_pca_dir = '%s/%s%s' % (root_model[:-1], 'train', '-pca' )
-    pca_train_file = '%s/%s.csv' % (train_pca_dir, dname)
+    train_data_file = os.path.join(train_feature_dir, dname + ".csv")
+    std_train_file = os.path.join(train_std_dir, dname + ".csv")
+    pca_train_file = os.path.join(train_pca_dir, dname + ".csv")
 
     # test data file, std&pca files
-    test_file = '%s/%s.csv' % (test_feature_dir, dname)
-    std_test_file = '%s/%s.csv' % (test_std_dir, dname)
-    pca_test_file = '%s/%s.csv' % (test_pca_dir, dname)
+    test_file = os.path.join(test_feature_dir, dname + ".csv")
+    std_test_file = os.path.join(test_std_dir, dname + ".csv")
+    pca_test_file = os.path.join(test_pca_dir, dname + ".csv")
 
     # idle_file = './data/idle-2021-features/%s.csv' % dname
 
-    routines_file = './data/trace-features/%s.csv' % dname
+    routines_file = os.path.join(config["routines-feature-dir"], dname + '.csv')
     if not os.path.isfile(routines_file):
         with_routines = False
     else:
@@ -167,41 +168,36 @@ def eval_individual_device(idle_data_file, dname):
 
         
     if not os.path.exists(train_std_dir):
-        os.makedirs(train_std_dir)
+        os.makedirs(train_std_dir, exist_ok=True)
     
     print(train_std_dir)
 
     if not os.path.exists(test_std_dir):
-        os.makedirs(test_std_dir)
+        os.makedirs(test_std_dir, exist_ok=True)
 
     
-    # idle dirctories
-    train_idle_std_dir = './data/idle-2021-train-std'
-    train_idle_pca_dir = './data/idle-2021-train-pca'
-    test_idle_std_dir = './data/idle-2021-test-std'
-    test_idle_pca_dir = './data/idle-2021-test-pca'
-    if not os.path.exists(train_idle_std_dir):
-        os.mkdir(train_idle_std_dir)
+    # create idle dirctories
+
+    if not os.path.exists(config["train-idle-std-dir"]):
+        os.makedirs(config["train-idle-std-dir"], exist_ok=True)
     # if not os.path.exists(train_idle_pca_dir):
     #     os.mkdir(train_idle_pca_dir)
-    if not os.path.exists(test_idle_std_dir):
-        os.mkdir(test_idle_std_dir)
+    if not os.path.exists(config["test-idle-std-dir"]):
+        os.makedirs(config["test-idle-std-dir"], exist_ok=True)
     # if not os.path.exists(test_idle_pca_dir):
     #     os.mkdir(test_idle_pca_dir)
 
     # idle std&pca files
-    train_idle_std_file = '%s/%s.csv' % ( train_idle_std_dir, dname) 
-    train_idle_pca_file = '%s/%s.csv' % ( train_idle_pca_dir, dname) 
-    test_idle_std_file = '%s/%s.csv' % ( test_idle_std_dir, dname) 
-    test_idle_pca_file = '%s/%s.csv' % ( test_idle_pca_dir, dname) 
+    train_idle_std_file = os.path.join( config["train-idle-std-dir"], dname + ".csv") 
+    train_idle_pca_file = os.path.join( config["train-idle-pca-dir"], dname + ".csv") 
+    test_idle_std_file = os.path.join( config["test-idle-std-dir"], dname + ".csv") 
+    test_idle_pca_file = os.path.join( config["test-idle-pca-dir"], dname + ".csv") 
 
     if with_routines:
-        routines_std_dir = './data/routines-std'
-        routines_pca_dir = './data/routines-pca'
-        routines_std_file = '%s/%s.csv' % ( routines_std_dir, dname) 
-        routines_pca_file = '%s/%s.csv' % ( routines_pca_dir, dname) 
-        if not os.path.exists(routines_std_dir):
-            os.mkdir(routines_std_dir)
+        routines_std_file = os.path.join( config["routines-std-dir"], dname + ".csv") 
+        routines_pca_file = os.path.join( config["routines-pca-dir"], dname + ".csv") 
+        if not os.path.exists(config["routines-std-dir"]):
+            os.mkdir(config["routines-std-dir"])
         # if not os.path.exists(routines_pca_dir):
         #     os.mkdir(routines_pca_dir)
 
@@ -270,7 +266,7 @@ def eval_individual_device(idle_data_file, dname):
     if len(train_idle_data)==0 or len(test_idle_data)==0:
         print('Not enough idle data points for:',dname,len(train_idle_data), len(test_idle_data))
         return
-    train_idle_len = len(train_idle_feature)
+    # train_idle_len = len(train_idle_feature)
 
     if only_idle:
         X_feature =  np.array(train_idle_feature)
@@ -302,11 +298,12 @@ def eval_individual_device(idle_data_file, dname):
     '''
     Save ss and pca
     '''
-    model_path = os.path.join(root_feature[0:5],'model/SS_PCA')
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
+    model_dir_path = config["ss-pca-model-path"]
+    if not os.path.exists(model_dir_path):
+        os.makedirs(model_dir_path)
     saved_dictionary = dict({'ss':ss}) # ,'pca':pca
-    pickle.dump(saved_dictionary, open("%s/%s.pkl"%(model_path,dname),"wb"))
+    model_file = os.path.join(model_dir_path, dname+".pkl")
+    pickle.dump(saved_dictionary, open(model_file, "wb"))
 
     
     if only_idle:
@@ -427,7 +424,6 @@ def eval_individual_device(idle_data_file, dname):
 
 
 if __name__ == '__main__':
+    with open("config.yml", 'r') as cfgfile:
+        config = yaml.load(cfgfile, Loader=yaml.Loader)
     main()
-    num_pools = 12
-
-# 

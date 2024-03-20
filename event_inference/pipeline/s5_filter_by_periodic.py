@@ -100,9 +100,9 @@ def main():
     print("Processing dataset: %s\nOutput files placed in: %s" % (dataset, root_model))
     root_output = os.path.join(root_model, 'output')
     if not os.path.exists(root_output):
-        os.system('mkdir -pv %s' % root_output)
+        os.makedirs(root_output)
         for model_alg in model_list:
-            model_dir = '%s/%s' % (root_model, model_alg)
+            model_dir = os.path.join(root_model, model_alg)
             if not os.path.exists(model_dir):
                 os.mkdir(model_dir)
                 
@@ -165,15 +165,15 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
     Prepare the directories and add only models that have not been trained yet 
     """
     model_alg = 'filter'
-    model_dir = '%s/%s' % (root_model, model_alg)
-    model_file = '%s/%s%s.model' % (model_dir, dname, model_alg)
+    model_dir = os.path.join(root_model, model_alg)
+    model_file = os.path.join(model_dir, dname + model_alg + ".model")
 
     """
     Get periods from fingerprinting files
     """
     periodic_tuple = []
     host_set = set()
-    with open('./period_detection/freq_period/2021_fingerprints/%s.txt' % dname, 'r') as file:
+    with open('./period_extraction/freq_period/fingerprints/%s.txt' % dname, 'r') as file:
         for line in file:
             tmp = line.split()
             # print(tmp)
@@ -229,7 +229,7 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
     num_of_state = len(set(y_labels_test))
 
     log_dir = os.path.join(root_model, '%s_logs' % dataset)
-    os.system('mkdir -pv %s' % log_dir)
+    os.makedirs(log_dir, exist_ok=True)
 
     host_protocol_dic = {}
     for i in range(len(test_feature)):
@@ -299,7 +299,7 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
         model_alg = 'filter'
         model_dir = os.path.join(root_model, model_alg)
         if not os.path.exists(model_dir):
-            os.system('mkdir -pv %s' % model_dir)
+            os.makedirs(model_dir, exist_ok=True)
         model_file = os.path.join(model_dir, dname + tmp_host_model + tmp_proto +".model")
 
 
@@ -447,4 +447,3 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
 
 if __name__ == '__main__':
     main()
-    num_pools = 12
