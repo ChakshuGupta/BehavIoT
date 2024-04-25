@@ -20,7 +20,7 @@ cols_feat = [ "meanBytes", "minBytes", "maxBytes", "medAbsDev",
             "meanBytes_in_external", "meanBytes_out_local", "meanBytes_in_local", 
             "device", "state", "event", "start_time", "remote_ip", "remote_port" ,"trans_protocol", "raw_protocol", "protocol", "hosts"]
 """
-INPUT: intermediate files
+INPUT: intermediate decoded files from s1
 OUTPUT: features for models, with device and state labels 
 """
 
@@ -306,7 +306,7 @@ def compute_tbp_features(pd_obj, device_name, state, event):
                 local_destination_device = list(mac_dic.keys())[list(mac_dic.values()).index(m)]
                 external_destination_addr = ''
                 remote_port = ''
-            elif ipaddress.ip_address(j).is_private==True or j in config["ip-addr"]["global"]:
+            elif ipaddress.ip_address(j).is_private==True or j in config["ip-addr"]["global"]: # router IPs
                 local_destination_device = m
                 external_destination_addr = ''
                 remote_port = ''
@@ -371,6 +371,7 @@ def compute_tbp_features(pd_obj, device_name, state, event):
         hosts = set([str(local_destination_device)])
 
     host_output = ";".join([x for x in hosts if x!= ""])
+    # merge similar hostnames
     if host_output.startswith('ec') and (host_output.endswith('compute.amazonaws.com') or host_output.endswith('compute-1.amazonaws.com')):
             host_output = '*.compute.amazonaws.com'
     if host_output == '':

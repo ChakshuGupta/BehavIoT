@@ -157,7 +157,7 @@ def extract_pcap(in_pcap, out_txt, dev_name, ip_host):
         
         cur_time = packet[1]
         
-        if dev_name=='govee-led1' or dev_name=='philips-bulb':
+        if dev_name=='govee-led1' or dev_name=='philips-bulb': # Govee-led and philps bulb experiments on different time
             pass
         elif cur_time.astype(np.float64) < 1630688400: # sep3 1pm sep8 13pm: 1631120400
             continue
@@ -537,7 +537,7 @@ def main(config):
             else:
                 dir_name = os.path.dirname(pcap)    
                 dev_name = os.path.basename(os.path.dirname(dir_name))
-                # if dev_name != 'google-nest-mini1' and dev_name != 'wyze-cam': # gosund-bulb1, echoflex1
+                # if dev_name != 'google-nest-mini1': # Testing 
                 #     continue
 
                 index = dev_proc[dev_name]

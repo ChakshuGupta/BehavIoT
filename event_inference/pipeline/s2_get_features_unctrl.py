@@ -19,7 +19,7 @@ cols_feat = [ "meanBytes", "minBytes", "maxBytes", "medAbsDev",
             "meanBytes_in_external", "meanBytes_out_local", "meanBytes_in_local", "device", "state", "event", "start_time", "protocol", "hosts"]
 
 """
-INPUT: intermediate files
+INPUT: intermediate decoded files from s1
 OUTPUT: features for models, with device and state labels 
 """
 
@@ -343,7 +343,6 @@ def compute_tbp_features(pd_obj, device_name, state, event, mac_dic):
             network_in += 1
             network_external += 1
             meanBytes_in_external += f_len
-
         # FIXME
         elif i == my_device_addr and (ipaddress.ip_address(j).is_private==True or j in config["ip-addr"]["global"]): # local out
             network_out_local += 1
@@ -383,6 +382,7 @@ def compute_tbp_features(pd_obj, device_name, state, event, mac_dic):
         hosts = set([str(local_destination_device)])
     
     host_output = ";".join([x for x in hosts if x!= ""])
+    # merge hostnames
     if host_output.startswith('ec') and (host_output.endswith('compute.amazonaws.com') or host_output.endswith('compute-1.amazonaws.com')):
             host_output = '*.compute.amazonaws.com'
     if host_output == '':
