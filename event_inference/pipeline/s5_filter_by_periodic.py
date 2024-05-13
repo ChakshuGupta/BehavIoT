@@ -11,6 +11,7 @@ from sklearn.cluster import DBSCAN
 import time
 from multiprocessing import Pool
 import Constants as c
+import yaml
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=FutureWarning)
 
@@ -134,7 +135,7 @@ def eid_wrapper(a):
 
 
 def eval_individual_device(dataset, dname, random_state, specified_models=None):
-    global root_model, root_output, dbscan_eps
+    global root_model, root_output, dbscan_eps, config
     """
 
     """
@@ -144,39 +145,50 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
     """
     model_alg = 'filter'
     model_dir = os.path.join(root_model, model_alg)
-    model_file = os.path.join(model_dir, dname + model_alg + ".model")
+    # model_file = os.path.join(model_dir, dname + model_alg + ".model")
 
     """
     Get periods from fingerprinting files
     """
     periodic_tuple = []
     host_set = set()
-    with open('./period_extraction/freq_period/fingerprints/%s.txt' % dname, 'r') as file:
-        for line in file:
-            tmp = line.split()
-            # print(tmp)
-            try:
-                tmp_proto = tmp[0]
-                tmp_host = tmp[1]
-                tmp_period = tmp[2]
-            except:
-                print(tmp)
-                exit(1)
-            if tmp_host == '#' or tmp_host  == ' ':
-                tmp_host = ''
-            periodic_tuple.append((tmp_host, tmp_proto, tmp_period))
-            host_set.add(tmp_host)
+    try:
+        file_path = os.path.join("period_extraction", config["fingerprint-path"], dname +'.txt')
+        with open(file_path, 'r') as file:
+            for line in file:
+                tmp = line.split()
+                # print(tmp)
+                try:
+                    tmp_proto = tmp[0]
+                    tmp_host = tmp[1]
+                    tmp_period = tmp[2]
+                except:
+                    print(tmp)
+                    exit(1)
+                if tmp_host == '#' or tmp_host  == ' ':
+                    tmp_host = ''
+                periodic_tuple.append((tmp_host, tmp_proto, tmp_period))
+                host_set.add(tmp_host)
 
+    except:
+        print( 'unable to read fingerprint file')
+        return
 
     """
     Load and preprocess testing data
     """
+    dataset_path = ""
 
-    if not os.path.isfile("data/%s-std/%s.csv" % (dataset,dname)):
+    for key in config.keys():
+        if "{}-std".format(dataset) in key:
+            dataset_path = config[key]
+            break
+    dataset_file = os.path.join(dataset_path, "%s.csv" % (dname))
+    if not os.path.isfile(dataset_file):
         return 0
 
     print('loading test data %s' % dname)
-    test_data = pd.read_csv("data/%s-std/%s.csv" % (dataset,dname))
+    test_data = pd.read_csv(dataset_file)
     # test_data = pd.read_csv("data/test-std/%s.csv" % dname)
     test_feature = test_data.drop(['device', 'state', 'event', 'start_time', 'protocol', 'hosts'], axis=1).fillna(-1)
     test_data_numpy = np.array(test_data)
@@ -239,7 +251,7 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
     """
     Filter local 
     """
-    local_mac_list = ['00:0c:43:26:60:00', '22:ef:03:1a:97:b9', 'ff:ff:ff:ff:ff:ff']
+    local_mac_list = config["local-mac-adrs"]
     filter_local = []
     for i in range(len(test_feature)):
         if test_hosts[i] in mac_dic or test_hosts[i] in local_mac_list or test_hosts[i]=='multicast' or ':' in test_hosts[i]:
@@ -274,8 +286,6 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
         else:
             tmp_host_model = tmp_host
 
-        model_alg = 'filter'
-        model_dir = os.path.join(root_model, model_alg)
         if not os.path.exists(model_dir):
             os.makedirs(model_dir, exist_ok=True)
         model_file = os.path.join(model_dir, dname + tmp_host_model + tmp_proto +".model")
@@ -284,6 +294,7 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
         print("predicting by trained_model")
         print('Test len before:',len(test_feature))
         filter_test = []
+        matched_suffix = False
         for i in range(len(test_feature)):
             if tmp_host.startswith('*'):
                 matched_suffix = test_hosts[i].endswith(tmp_host[2:])
@@ -412,14 +423,16 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
     test_feature['protocol'] = test_data_numpy[:,-2]
     test_feature['hosts'] = test_data_numpy[:,-1]
     # test_feature = pd.DataFrame(test_feature , columns=cols_feat) 
-
-    output_dir = 'data/%s-filtered-std/' % dataset
+    outut_dir_name = os.path.dirname(dataset_path.rstrip("/"))
+    output_dir = os.path.join(outut_dir_name, "%s-filtered-std/" % dataset)
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
-    filtered_train_processed= '%s/%s.csv' % (output_dir , dname)
+    filtered_train_processed= os.path.join(output_dir, '%s.csv' % (dname))
     test_feature.to_csv(filtered_train_processed, index=False)
 
     return 0
 
 if __name__ == '__main__':
+    with open("config.yml", 'r') as cfgfile:
+        config = yaml.load(cfgfile, Loader=yaml.Loader)
     main()

@@ -42,4 +42,8 @@ routines-pca-dir: "./data/routines-pca"
 
 
 # For s5 scripts
-idle-filter-dir: './data/idle-2021-test-filtered-std'
+idle-filter-dir: "./data/idle-2021-test-filtered-std"
+local-mac-adrs:
+  - "00:0c:43:26:60:00"
+  - "22:ef:03:1a:97:b9"
+  - "ff:ff:ff:ff:ff:ff"
