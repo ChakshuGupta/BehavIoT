@@ -22,7 +22,7 @@ root_model = ''
 This script captures the hostname fingerprints of user events. It's not required for event inference. See usage.md for details. 
 """
 def main():
-    global  root_output, model_list , root_feature, root_model
+    global  root_output, root_feature, root_model
 
     # Parse Arguments
     parser = argparse.ArgumentParser(usage=c.PREDICT_MOD_USAGE, add_help=False)
@@ -59,13 +59,15 @@ def main():
     if root_model == "":
         errors = True
         print(c.NO_MOD_DIR, file=sys.stderr)
-    elif os.path.isdir(root_model):
-        if not os.access(root_model, os.W_OK):
-            errors = True
-            print(c.NO_PERM % ("model directory", root_model, "write"), file=sys.stderr)
-        if not os.access(root_model, os.X_OK):
-            errors = True
-            print(c.NO_PERM % ("model directory", root_model, "execute"), file=sys.stderr)
+    elif not os.path.exists(root_model):
+        os.makedirs(root_model, exist_ok=True)
+    # elif os.path.isdir(root_model):
+    #     if not os.access(root_model, os.W_OK):
+    #         errors = True
+    #         print(c.NO_PERM % ("model directory", root_model, "write"), file=sys.stderr)
+    #     if not os.access(root_model, os.X_OK):
+    #         errors = True
+    #         print(c.NO_PERM % ("model directory", root_model, "execute"), file=sys.stderr)
 
     if errors:
         print('Errorrrr')
@@ -75,12 +77,8 @@ def main():
 
     print("Input files located in: %s \n Output files placed in: %s" % (root_feature, root_model))
     # root_output = os.path.join(root_model, 'fingerprint')
-    root_output = root_model
-    if not os.path.exists(root_output):
-        os.system('mkdir -pv %s' % root_output)
 
-
-    train_models(root_feature, root_output)
+    train_models(root_feature, root_model)
 
 
 def train_models(root_feature, root_output):
@@ -100,7 +98,7 @@ def train_models(root_feature, root_output):
     for csv_file in os.listdir(root_feature):
         if csv_file.endswith('.csv'):
             print(csv_file)
-            train_data_file = '%s/%s' % (root_feature, csv_file)
+            train_data_file = os.path.join(root_feature, csv_file)
             dname = csv_file[:-4]
             lparas.append((train_data_file, dname, random_state))
     p = Pool(num_pools)
@@ -160,6 +158,8 @@ def fingerprint_individual_device(train_data_file, dname, random_state):
             tmp = train_protocol[i].split(';')
             train_protocol[i] = ' & '.join(tmp)
     # print(train_hosts)
+    
+    # Create a set of domains in the train dataset
     domain_set = set()
     for i in range(len(train_hosts)):
         if train_hosts[i] != '' and train_hosts[i] != None:
@@ -175,7 +175,7 @@ def fingerprint_individual_device(train_data_file, dname, random_state):
 
         domain_set.add(train_hosts[i])
 
-
+    # Update the domain value in the set with *.b.c.d if it is like a.b.c.d
     for i in domain_set.copy():
         matched = 0
         if len(i.split('.')) >= 4: # a.b.c.d -> *.b.c.d
@@ -220,7 +220,7 @@ def fingerprint_individual_device(train_data_file, dname, random_state):
                 else:
                     res_dict[l][tuple_pair] = [1,len(cur_label_num)]
 
-    output_file = "%s/%s.txt" %(root_output, dname)
+    output_file = os.path.join(root_output, "%s.txt" %(dname))
 
     if res_dict == 0 or res_dict is None or len(res_dict) == 0: return 0
 

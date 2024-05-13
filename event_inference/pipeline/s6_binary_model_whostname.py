@@ -13,6 +13,7 @@ from sklearn.metrics import precision_recall_fscore_support
 import time
 from multiprocessing import Pool
 import Constants as c
+import yaml
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=FutureWarning)
@@ -33,7 +34,7 @@ def print_usage(is_error):
     print(c.PREDICT_MOD_USAGE, file=sys.stderr) if is_error else print(c.PREDICT_MOD_USAGE)
     exit(is_error)
 
-def main():
+def main(config):
     global  root_output, model_list , root_feature, root_model
 
     # Parse Arguments
@@ -83,7 +84,7 @@ def main():
 
 
     if not model_list:
-        model_list = default_models.copy()
+        model_list = default_models
 
     if errors:
         print_usage(1)
@@ -92,11 +93,11 @@ def main():
     print("Input files located in: %s\nOutput files placed in: %s" % (root_feature, root_model))
     root_output = os.path.join(root_model, 'output')
     if not os.path.exists(root_output):
-        os.system('mkdir -pv %s' % root_output)
+        os.makedirs(root_output, exist_ok=True)
         for model_alg in model_list:
-            model_dir = '%s/%s' % (root_model, model_alg)
+            model_dir = os.path.join(root_model, model_alg)
             if not os.path.exists(model_dir):
-                os.mkdir(model_dir)
+                os.makedirs(model_dir, exist_ok=True)
 
     train_models(root_feature, root_model, root_output)
 
@@ -153,20 +154,20 @@ def eval_individual_device(train_data_file, dname, random_state):
     """
     training/testing/evaluation of an individual device 
     """
-
+    #### Dead code
     list_models_todo = []
     for model_alg in model_list:
         """
         Prepare the directories and add only models that have not been trained yet 
         """
-        model_dir = '%s/%s' % (root_model, model_alg)
+        model_dir = os.path.join(root_model, model_alg)
         # model_file = '%s/%s%s.model' % (model_dir, dname, model_alg)
         label_file = '%s/%s.label.txt' % (model_dir, dname)
 
         list_models_todo.append(model_alg)
 
     print('Training %s using algorithm(s): %s' % (dname, str(list_models_todo)))
-
+    ####
 
     """
     read training data
@@ -186,7 +187,7 @@ def eval_individual_device(train_data_file, dname, random_state):
     '''
     read idle data for training (as negatives)
     '''
-    train_bg = pd.read_csv("data/idle-2021-train-std/%s.csv" % dname)
+    train_bg = pd.read_csv(os.path.join( config["train-idle-std-dir"] , "%s.csv" % dname))
     bg_feature = train_bg.drop(['device', 'state', 'event', 'start_time', 'protocol', 'hosts'], axis=1).fillna(-1)
     bg_feature = np.array(bg_feature)
     bg_labels = np.zeros(len(bg_feature))
@@ -218,7 +219,7 @@ def eval_individual_device(train_data_file, dname, random_state):
     """
     read testing set
     """
-    test_data = pd.read_csv(os.path.join('data/test-filtered-std/', '%s.csv' %dname))
+    test_data = pd.read_csv(os.path.join(config["test-filter-dir"], '%s.csv' %dname))
 
     X_test = test_data.drop(['device', 'state', 'event', 'start_time', 'protocol', 'hosts'], axis=1).fillna(-1)
     y_test = np.array(test_data.state)
@@ -226,7 +227,7 @@ def eval_individual_device(train_data_file, dname, random_state):
     test_protocol = np.array(test_data.protocol)
     test_events = np.array(test_data.event)
     
-    idle_FP_data = pd.read_csv(os.path.join('data/idle-2021-test-filtered-std/', '%s.csv' %dname))
+    idle_FP_data = pd.read_csv(os.path.join(config["idle-filter-dir"], '%s.csv' %dname))
     idle_FP_test = idle_FP_data.drop(['device', 'state', 'event', 'start_time', 'protocol', 'hosts'], axis=1).fillna(-1)
     idle_FP_ts = np.array(idle_FP_data.start_time)
     idle_FP_protocol = np.array(idle_FP_data.protocol)
@@ -250,7 +251,7 @@ def eval_individual_device(train_data_file, dname, random_state):
 
 
     # read fingerprints domains
-    fingerprint_file = 'model/fingerprint/%s.txt' % dname
+    fingerprint_file = os.path.join(config["model-fingerprint"] ,'%s.txt' % dname)
     activity_fingerprint_dic = {}
     activity_fingerprint_merge_count = {}
     tmp_activity_list = []
@@ -308,7 +309,7 @@ def eval_individual_device(train_data_file, dname, random_state):
     # model files, label files, and output files
     model_dir = os.path.join(root_model, model_alg)
     if not os.path.exists(model_dir):
-        os.system('mkdir -pv %s' % model_dir)
+        os.makedirs(model_dir, exist_ok=True)
     
     label_file = os.path.join(model_dir, dname + ".label.txt")
     output_file = os.path.join(root_output, "result_" + model_alg + ".txt")
@@ -593,5 +594,7 @@ def eval_individual_device(train_data_file, dname, random_state):
     return []
         
 if __name__ == '__main__':
-    main()
+    with open("config.yml", 'r') as cfgfile:
+        config = yaml.load(cfgfile, Loader=yaml.Loader)
+        main(config)
     num_pools = 1
