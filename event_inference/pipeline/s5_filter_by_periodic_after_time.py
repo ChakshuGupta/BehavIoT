@@ -11,6 +11,7 @@ from sklearn.cluster import DBSCAN
 import time
 from multiprocessing import Pool
 import Constants as c
+import yaml
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=FutureWarning)
 
@@ -112,7 +113,12 @@ def train_models():
 
     random_state = 422
     print("random_state:", random_state)
-    for csv_file in os.listdir('data/%s-std/' % dataset):
+    dataset_path = ""
+    for key in config.keys():
+        if "{}-std".format(dataset) in key:
+            dataset_path = config[key]
+            break
+    for csv_file in os.listdir(dataset_path):
         if csv_file.endswith('.csv'):
             print(csv_file)
             dname = csv_file[:-4]
@@ -131,50 +137,60 @@ def eid_wrapper(a):
 
 
 def eval_individual_device(dataset, dname, random_state, specified_models=None):
-    global root_model, root_output, dbscan_eps
+    global root_model, root_output, dbscan_eps, config
 
     """
     Prepare the directories and add only models that have not been trained yet 
     """
     model_alg = 'filter'
-    model_dir = '%s/%s' % (root_model, model_alg)
-    model_file = '%s/%s%s.model' % (model_dir, dname, model_alg)
+    model_dir = os.path.join(root_model, model_alg)
+    # model_file = '%s/%s%s.model' % (model_dir, dname, model_alg)
 
     """
     Get periods from fingerprinting files
     """
     periodic_tuple = []
     host_set = set()
-    with open('./period_detection/freq_period/2021_fingerprints/%s.txt' % dname, 'r') as file:
-        for line in file:
-            tmp = line.split()
-            # print(tmp)
-            try:
-                tmp_proto = tmp[0]
-                tmp_host = tmp[1]
-                tmp_period = tmp[2]
-            except:
-                print(tmp)
-                exit(1)
-            if tmp_host == '#' or tmp_host  == ' ':
-                tmp_host = ''
+    try:
+        file_path = os.path.join("period_extraction", config["fingerprint-path"], dname +'.txt')
+        with open(file_path, 'r') as file:
+            for line in file:
+                tmp = line.split()
+                # print(tmp)
+                try:
+                    tmp_proto = tmp[0]
+                    tmp_host = tmp[1]
+                    tmp_period = tmp[2]
+                except:
+                    print(tmp)
+                    exit(1)
+                if tmp_host == '#' or tmp_host  == ' ':
+                    tmp_host = ''
 
-            periodic_tuple.append((tmp_host, tmp_proto, tmp_period))
-            host_set.add(tmp_host)
+                periodic_tuple.append((tmp_host, tmp_proto, tmp_period))
+                host_set.add(tmp_host)
+    except:
+        print( 'unable to read fingerprint file')
+        return
 
 
     """
     Load and preprocess testing data
     """
 
-    if not os.path.isfile("data/%s-std/%s.csv" % (dataset,dname)):
-        return 0
-    output_dir = 'data/%s-filtered-std/' % dataset
-    filtered_train_processed = '%s/%s.csv' % (output_dir, dname)
+    dataset_path = ""
+    for key in config.keys():
+        if "{}-std".format(dataset) in key:
+            dataset_path = config[key]
+            break
+    dataset_file = os.path.join(dataset_path, "%s.csv" % (dname))
 
+    if not os.path.isfile(dataset_file):
+        return 0
+    outut_dir_name = os.path.dirname(dataset_path.rstrip("/"))
     
     print('loading test data %s' % dname)
-    test_data = pd.read_csv("data/%s-filtered-std-time/%s.csv" % (dataset,dname))
+    test_data = pd.read_csv(os.path.join(outut_dir_name,"%s-filtered-std-time/%s.csv" % (dataset,dname)))
     test_feature = test_data.drop(['device', 'state', 'event', 'start_time', 'protocol', 'hosts'], axis=1).fillna(-1)
     test_data_numpy = np.array(test_data)
     test_feature = np.array(test_feature)
@@ -203,7 +219,7 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
     num_of_state = len(set(y_labels_test))
 
     log_dir = os.path.join(root_model, '%s_logs' % dataset)
-    os.system('mkdir -pv %s' % log_dir)
+    os.makedirs(log_dir, exist_ok=True)
 
     host_protocol_dic = {}
     for i in range(len(test_feature)):
@@ -235,7 +251,7 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
     """
     Filter local
     """
-    local_mac_list = ['00:0c:43:26:60:00', '22:ef:03:1a:97:b9', 'ff:ff:ff:ff:ff:ff']
+    local_mac_list = config["local-mac-adrs"]
     filter_local = []
     # print(mac_dic)
     # exit(1)
@@ -272,10 +288,8 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
         else:
             tmp_host_model = tmp_host
 
-        model_alg = 'filter'
-        model_dir = os.path.join(root_model, model_alg)
         if not os.path.exists(model_dir):
-            os.system('mkdir -pv %s' % model_dir)
+            os.makedirs(model_dir, exist_ok=True)
         model_file = os.path.join(model_dir, dname + tmp_host_model + tmp_proto +".model")
 
 
@@ -409,19 +423,18 @@ def eval_individual_device(dataset, dname, random_state, specified_models=None):
     test_feature['start_time'] = test_data_numpy[:,-3]
     test_feature['protocol'] = test_data_numpy[:,-2]
     test_feature['hosts'] = test_data_numpy[:,-1]
-
-    output_dir = 'data/%s-filtered-std/' % dataset
+ 
+    output_dir = os.path.join(outut_dir_name, "%s-filtered-std/" % dataset)
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
-    filtered_train_processed= '%s/%s.csv' % (output_dir , dname)
 
+    filtered_train_processed = os.path.join(output_dir, '%s.csv' % (dname))
     test_feature.to_csv(filtered_train_processed, index=False)
 
     return 0
 
 
 if __name__ == '__main__':
+    with open("config.yml", 'r') as cfgfile:
+        config = yaml.load(cfgfile, Loader=yaml.Loader)
     main()
-    num_pools = 12
-
-# 
